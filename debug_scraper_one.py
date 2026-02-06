@@ -4,6 +4,8 @@ import sys
 from playwright.async_api import async_playwright
 from scraper.categories.bollywood.bollywoodhungama import BollywoodHungamaScraper
 from scraper.categories.bollywood.imdb import IMDbScraper
+from scraper.categories.sports.espncricinfo import ESPNCricinfoScraper
+from scraper.categories.sports.sportskeeda import SportskeedaScraper
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +20,10 @@ async def debug_scraper(scraper_name):
             scraper = BollywoodHungamaScraper(page)
         elif scraper_name == "imdb":
             scraper = IMDbScraper(page)
+        elif scraper_name == "espncricinfo":
+            scraper = ESPNCricinfoScraper(page)
+        elif scraper_name == "sportskeeda":
+            scraper = SportskeedaScraper(page)
         else:
             print(f"Unknown scraper: {scraper_name}")
             return
@@ -36,6 +42,6 @@ async def debug_scraper(scraper_name):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python debug_scraper_one.py <scraper_name>")
-        print("Available scrapers: bollywoodhungama, imdb")
+        print("Available scrapers: bollywoodhungama, imdb, espncricinfo, sportskeeda")
     else:
         asyncio.run(debug_scraper(sys.argv[1]))

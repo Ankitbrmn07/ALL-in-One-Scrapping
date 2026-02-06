@@ -13,35 +13,51 @@ class IMDbScraper(BaseScraper):
         
         # Scrape Top Rated Indian Movies
         try:
-            # IMDb's structure often involves a list of `li` items in a `ipc-metadata-list`
-            movie_rows = await self.page.locator(".ipc-metadata-list li.ipc-metadata-list-summary-item").all()
+            # New structure uses ipc-metadata-list__item
+            movie_rows = await self.page.locator("li.ipc-metadata-list__item").all()
             
             for row in movie_rows[:15]:
                 try:
-                    title_el = row.locator("h3.ipc-title__text").first
-                    link_el = row.locator("a.ipc-title-link-wrapper").first
+                    # Title is in a span with data-testid 'rank-list-item-title'
+                    # It contains the rank (e.g. "1. ") and the text.
+                    title_el = row.locator("span[data-testid='rank-list-item-title']").first
                     
+                    # Link might be on the icon or separate. 
+                    # We can use the icon link which definitely has the href.
+                    link_el = row.locator("a.ipc-metadata-list-item__icon-link").first
+                    if not await link_el.count():
+                         link_el = row.locator("a[href^='/title/']").first
+
                     if await title_el.count() > 0:
-                        title = await title_el.inner_text()
+                        full_title_text = await title_el.inner_text()
+                        # Remove rank if present (e.g. "1. 3 Idiots" -> "3 Idiots")
+                        parts = full_title_text.split(" ", 1)
+                        if len(parts) > 1 and parts[0].replace(".", "").isdigit():
+                            title = parts[1]
+                        else:
+                            title = full_title_text
+                            
                         link = await link_el.get_attribute("href")
                         
-                        # Metadata (Year, Rating)
-                        metadata_items = row.locator(".cli-title-metadata span").all()
-                        metadata_text = []
-                        for meta in await metadata_items:
-                            metadata_text.append(await meta.inner_text())
-                        
-                        rating_el = row.locator(".ipc-rating-star").first
+                        # Rating
+                        rating_el = row.locator("span.ipc-rating-star--rating").first
                         rating = await rating_el.inner_text() if await rating_el.count() > 0 else "N/A"
 
-                        full_link = f"https://www.imdb.com{link}" if link.startswith("/") else link
+                        # Image
+                        img_el = row.locator("img.ipc-image").first
+                        img_src = ""
+                        if await img_el.count() > 0:
+                            img_src = await img_el.get_attribute("src")
+
+                        full_link = f"https://www.imdb.com{link}" if link and link.startswith("/") else link
 
                         items.append({
                             "title": title.strip(),
-                            "short_description": f"Rating: {rating}, Info: {' | '.join(metadata_text)}",
+                            "short_description": f"Rating: {rating}",
                             "sub_category": "Top Rated Indian Movies",
                             "source_url": full_link,
-                            "author": "IMDb"
+                            "author": "IMDb",
+                            "image_url": img_src
                         })
                 except Exception:
                     continue

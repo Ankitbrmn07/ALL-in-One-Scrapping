@@ -11,55 +11,42 @@ class BollywoodHungamaScraper(BaseScraper):
     async def extract_items(self) -> List[Dict]:
         items = []
         
-        # 1. Main Featured News (Center Stage)
-        # Selectors are approximated based on general news site structures
-        # as live inspection isn't available.
+        # 1. Main Featured News & Latest News
+        # Based on inspection, items are in .bh-grid-post-container or .hentry
         try:
-            featured = await self.page.locator("article.featured").all()
-            if not featured:
-                 featured = await self.page.locator(".bh-slider-item").all() # Fallback for sliders
-
-            for article in featured[:5]:
+            # We target the specific grid containers we saw in the dump
+            article_containers = await self.page.locator(".bh-grid-post-container").all()
+            
+            for container in article_containers[:15]:  # Get first 15 items
                 try:
-                    title_el = article.locator("h2 a, h3 a").first
+                    # Title and Link are usually in .bh-title h2 a
+                    title_el = container.locator(".bh-title h2 a").first
+                    
                     if await title_el.count() > 0:
-                        title = await title_el.inner_text()
-                        link = await title_el.get_attribute("href")
-                        desc_el = article.locator("p").first
-                        desc = await desc_el.inner_text() if await desc_el.count() > 0 else ""
-
-                        items.append({
-                            "title": title.strip(),
-                            "short_description": desc.strip(),
-                            "sub_category": "Featured",
-                            "source_url": link,
-                            "author": "Bollywood Hungama"
-                        })
-                except Exception:
-                    continue
-        except Exception as e:
-            logger.warning(f"Error scraping featured items: {e}")
-
-        # 2. Latest News
-        try:
-            news_list = await self.page.locator(".latest-news li, article.news-item").all()
-            for item in news_list[:10]:
-                try:
-                    title_el = item.locator("a.title, h3 a").first
-                    if await title_el.count() > 0:
-                        title = await title_el.inner_text()
+                        name = await title_el.inner_text()
                         link = await title_el.get_attribute("href")
                         
+                        # Description might be missing or in a different place, but we have title
+                        # Try to get image if possible
+                        img_el = container.locator("figure img").first
+                        img_src = ""
+                        if await img_el.count() > 0:
+                             img_src = await img_el.get_attribute("data-src") or await img_el.get_attribute("src")
+
+                        desc = "Bollywood News" # Default description as text is minimal in grid
+
                         items.append({
-                            "title": title.strip(),
-                            "short_description": "Latest Bollywood News",
-                            "sub_category": "Latest News",
+                            "title": name.strip(),
+                            "short_description": desc,
+                            "sub_category": "Featured", # Simplifying to one category for now
                             "source_url": link,
-                            "author": "Bollywood Hungama"
+                            "author": "Bollywood Hungama",
+                            "image_url": img_src
                         })
-                except Exception:
+                except Exception as e:
+                    # logger.warning(f"Error scraping individual item: {e}")
                     continue
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error scraping Bollywood Hungama items: {e}")
 
         return items

@@ -10,26 +10,41 @@ class SportskeedaScraper(BaseScraper):
 
     async def extract_items(self) -> List[Dict]:
         items = []
-        
-        # 1. Trending / Featured
+
         try:
-            articles = await self.page.locator(".feed-item, .listing-story").all()
+            # Scrape featured/latest articles
+            # Based on inspection: a.news-item contains the info
+            articles = await self.page.locator("a.news-item").all()
             
-            for article in articles[:10]:
+            for article in articles[:15]:
                 try:
-                    title_el = article.locator(".title a, h2 a").first
+                    title_el = article.locator(".news-item-content-bottom-title").first
                     if await title_el.count() > 0:
-                        title = await title_el.inner_text()
-                        link = await title_el.get_attribute("href")
+                        name = await title_el.inner_text()
+                        link = await article.get_attribute("href")
                         
+                        if link and not link.startswith("http"):
+                             link = f"https://www.sportskeeda.com{link}"
+
+                        # Image
+                        img_el = article.locator("img.feed-element-img").first
+                        img_src = ""
+                        if await img_el.count() > 0:
+                            img_src = await img_el.get_attribute("data-lazy") or await img_el.get_attribute("src")
+
+                        # Date/Subtitle
+                        date_el = article.locator(".news-item-content-bottom-subtitle-date").first
+                        date_text = await date_el.inner_text() if await date_el.count() > 0 else ""
+
                         items.append({
-                            "title": title.strip(),
-                            "short_description": "Sports News",
-                            "sub_category": "General Sports",
-                            "source_url": link if link.startswith("http") else f"https://www.sportskeeda.com{link}",
-                            "author": "Sportskeeda"
+                            "title": name.strip(),
+                            "short_description": f"Sports News - {date_text}",
+                            "sub_category": "Sports",
+                            "source_url": link,
+                            "author": "Sportskeeda",
+                            "image_url": img_src
                         })
-                except:
+                except Exception:
                     continue
         except Exception as e:
             logger.warning(f"Error scraping Sportskeeda: {e}")
