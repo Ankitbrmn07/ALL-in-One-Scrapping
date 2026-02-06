@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All-in-One Web Scraper</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        /* Custom styling for the page */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .form-check {
+            padding-left: 0;
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .status-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            margin-bottom: 15px;
+        }
+
+        .status-info {
+            background-color: #cfe2ff;
+            border-left-color: #0d6efd;
+            color: #084298;
+        }
+
+        .status-warning {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+            color: #997404;
+        }
+
+        .status-success {
+            background-color: #d1e7dd;
+            border-left-color: #198754;
+            color: #0f5132;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #842029;
+        }
+
+        .result-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .website-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .website-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .website-option input[type="checkbox"] {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Main Card Container -->
+        <div class="card">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1><i class="bi bi-download"></i> All-in-One Web Scraper</h1>
+                <p>Extract data from any website with ease</p>
+            </div>
+
+            <!-- Form Section -->
+            <div class="form-section">
+                <!-- Category Selection -->
+                <div class="mb-4">
+                    <label class="section-title">
+                        <i class="bi bi-folder"></i>
+                        Step 1: Select Category
+                    </label>
+                    <select class="form-select form-select-lg" id="categorySelect" onchange="loadWebsites()">
+                        <option value="">-- Select Category --</option>
+                        <option value="biography">Biography</option>
+                        <option value="bollywood">Bollywood / Entertainment</option>
+                        <option value="politics">Politics / World News</option>
+                        <option value="health">Health</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="technology">Technology</option>
+                        <option value="sports">Sports</option>
+                        <option value="travel">Travel</option>
+                        <option value="fashion">Fashion</option>
+                    </select>
+                </div>
+
+                <!-- Website Selection (Dynamic based on category) -->
+                <div class="mb-4" id="websiteSection" style="display: none;">
+                    <label class="section-title">
+                        <i class="bi bi-globe"></i>
+                        Step 2: Select Websites to Scrape
+                    </label>
+                    <div id="websiteList" class="d-flex flex-column gap-2">
+                        <!-- Websites will be loaded dynamically here -->
+                    </div>
+                    <div class="form-text">Select one or more websites from this category</div>
+                </div>
+
+                <!-- Data Type Selection -->
+                <div class="mb-4">
+                    <label class="section-title">
+                        <i class="bi bi-file-earmark-check"></i>
+                        Step 3: Data Type to Scrape
+                    </label>
+                    <div class="checkbox-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="text" id="dataText" checked>
+                            <label class="form-check-label" for="dataText">
+                                <i class="bi bi-file-text"></i> Text
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="images" id="dataImages">
+                            <label class="form-check-label" for="dataImages">
+                                <i class="bi bi-image"></i> Images
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="videos" id="dataVideos">
+                            <label class="form-check-label" for="dataVideos">
+                                <i class="bi bi-camera-video"></i> Videos
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="audio" id="dataAudio">
+                            <label class="form-check-label" for="dataAudio">
+                                <i class="bi bi-music-note"></i> Audio
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="files" id="dataFiles">
+                            <label class="form-check-label" for="dataFiles">
+                                <i class="bi bi-file-zip"></i> Files
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Format Selection -->
+                <div class="mb-4">
+                    <label class="section-title">
+                        <i class="bi bi-filetype-csv"></i>
+                        Step 4: Output Format
+                    </label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="outputFormat" id="formatCSV" value="csv" checked>
+                        <label class="btn btn-outline-primary" for="formatCSV">
+                            <i class="bi bi-filetype-csv"></i> CSV
+                        </label>
+
+                        <input type="radio" class="btn-check" name="outputFormat" id="formatJSON" value="json">
+                        <label class="btn btn-outline-primary" for="formatJSON">
+                            <i class="bi bi-filetype-json"></i> JSON
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <button class="btn btn-primary btn-lg" id="startButton" onclick="startScraping()">
+                        <i class="bi bi-play-circle"></i> Start Scraping
+                    </button>
+                    <button class="btn btn-secondary btn-lg" onclick="resetForm()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </button>
+                </div>
+
+                <!-- Status Section (hidden by default) -->
+                <div class="status-section" id="statusSection">
+                    <div class="status-box" id="statusBox"></div>
+                </div>
+
+                <!-- Result Section (hidden by default) -->
+                <div class="result-section" id="resultSection">
+                    <label class="section-title">
+                        <i class="bi bi-check-circle"></i>
+                        Scraping Results
+                    </label>
+                    <div class="result-card" id="resultCard"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-3 text-white">
+            <small>Made by AB using HTML, CSS, JS | Backend: Flask API</small>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ===========================
+        // GLOBAL CONFIG
+        // ===========================
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Category to Website mapping (synced with backend)
+        const CATEGORY_WEBSITES = {
+            "biography": [
+                { "name": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Main_Page", "scraper": "wikipedia" }
+            ],
+            "bollywood": [
+                { "name": "FilmiBeat", "url": "https://www.filmibeat.com/", "scraper": "filmibeat" },
+                { "name": "Bollywood Hungama", "url": "https://www.bollywoodhungama.com/", "scraper": "bollywoodhungama" },
+                { "name": "IMDb", "url": "https://www.imdb.com/", "scraper": "imdb" }
+            ],
+            "politics": [
+                { "name": "BBC", "url": "https://www.bbc.com/", "scraper": "bbc" }
+            ],
+            "health": [
+                { "name": "WHO", "url": "https://www.who.int/", "scraper": "who" },
+                { "name": "NIH", "url": "https://www.nih.gov/", "scraper": "nih" },
+                { "name": "Healthline", "url": "https://www.healthline.com/", "scraper": "healthline" }
+            ],
+            "fitness": [
+                { "name": "Healthline Fitness", "url": "https://www.healthline.com/fitness", "scraper": "healthline_fitness" },
+                { "name": "Men's Health", "url": "https://www.menshealth.com/", "scraper": "menshealth" }
+            ],
+            "technology": [
+                { "name": "Gadgets 360", "url": "https://www.gadgets360.com/", "scraper": "gadgets360" }
+            ],
+            "sports": [
+                { "name": "ESPN Cricinfo", "url": "https://www.espncricinfo.com/", "scraper": "espncricinfo" },
+                { "name": "Sportskeeda", "url": "https://www.sportskeeda.com/", "scraper": "sportskeeda" }
+            ],
+            "travel": [
+                { "name": "Lonely Planet", "url": "https://www.lonelyplanet.com/", "scraper": "lonelyplanet" }
+            ],
+            "fashion": [
+                { "name": "Fashion United", "url": "http://fashionunited.in/", "scraper": "fashionunited" }
+            ]
+        };
+
+        // ===========================
+        // LOAD WEBSITES BASED ON CATEGORY
+        // ===========================
+        function loadWebsites() {
+            const category = document.getElementById('categorySelect').value;
+            const websiteSection = document.getElementById('websiteSection');
+            const websiteList = document.getElementById('websiteList');
+
+            // Clear previous website list
+            websiteList.innerHTML = '';
+
+            if (!category) {
+                websiteSection.style.display = 'none';
+                return;
+            }
+
+            // Get websites for selected category
+            const websites = CATEGORY_WEBSITES[category] || [];
+
+            // Create checkboxes for each website
+            websites.forEach((site, index) => {
+                const websiteOption = document.createElement('div');
+                websiteOption.className = 'website-option';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input';
+                checkbox.id = `website_${index}`;
+                checkbox.value = site.scraper;
+
+                const label = document.createElement('label');
+                label.className = 'form-check-label flex-grow-1';
+                label.htmlFor = `website_${index}`;
+                label.innerHTML = `<strong>${site.name}</strong><br><small class="text-muted">${site.url}</small>`;
+
+                websiteOption.appendChild(checkbox);
+                websiteOption.appendChild(label);
+                websiteList.appendChild(websiteOption);
+            });
+
+            // Show the website section
+            websiteSection.style.display = 'block';
+        }
+
+        // ===========================
+        // MAIN SCRAPING FUNCTION
+        // ===========================
+        async function startScraping() {
+            // Get values from form inputs
+            const category = document.getElementById('categorySelect').value;
+            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
+
+            // Get selected websites
+            const selectedWebsites = [];
+            const websiteCheckboxes = document.querySelectorAll('#websiteList input[type="checkbox"]:checked');
+            websiteCheckboxes.forEach(checkbox => {
+                selectedWebsites.push(checkbox.value);
+            });
+
+            // Get selected data types
+            const dataTypes = [];
+            const dataCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');
+            dataCheckboxes.forEach(checkbox => {
+                dataTypes.push(checkbox.value);
+            });
+
+            // Validation
+            if (!category) {
+                alert('Please select a category');
+                return;
+            }
+
+            if (selectedWebsites.length === 0) {
+                alert('Please select at least one website to scrape');
+                return;
+            }
+
+            if (dataTypes.length === 0) {
+                alert('Please select at least one data type to scrape');
+                return;
+            }
+
+            // Disable the start button
+            const startButton = document.getElementById('startButton');
+            startButton.disabled = true;
+            startButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Scraping...';
+
+            // Show status
+            showStatus('info', '<i class="bi bi-hourglass-split"></i> Initializing scraper... Please wait.');
+
+            // Hide previous results
+            document.getElementById('resultSection').style.display = 'none';
+
+            try {
+                // Make API call to backend
+                const response = await fetch(`${API_BASE_URL}/scrape`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        category: category,
+                        websites: selectedWebsites,
+                        dataTypes: dataTypes,
+                        outputFormat: outputFormat
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', '<i class="bi bi-check-circle"></i> Scraping completed successfully!');
+                    showResults(data);
+                } else {
+                    showStatus('error', '<i class="bi bi-x-circle"></i> Error: ' + (data.error || 'Unknown error'));
+                }
+
+            } catch (error) {
+                showStatus('error', '<i class="bi bi-x-circle"></i> Failed to connect to backend. Make sure the Flask server is running on port 5000.');
+                console.error('API Error:', error);
+            } finally {
+                // Re-enable the start button
+                startButton.disabled = false;
+                startButton.innerHTML = '<i class="bi bi-play-circle"></i> Start Scraping';
+            }
+        }
+
+        // ===========================
+        // SHOW STATUS MESSAGE
+        // ===========================
+        function showStatus(type, message) {
+            const statusSection = document.getElementById('statusSection');
+            const statusBox = document.getElementById('statusBox');
+
+            statusBox.className = 'status-box status-' + type;
+            statusBox.innerHTML = message;
+            statusSection.style.display = 'block';
+        }
+
+        // ===========================
+        // SHOW RESULTS
+        // ===========================
+        function showResults(data) {
+            const resultSection = document.getElementById('resultSection');
+            const resultCard = document.getElementById('resultCard');
+
+            let totalItems = 0;
+            let resultHTML = '';
+
+            // Process each website result
+            data.results.forEach(result => {
+                totalItems += result.items_scraped || 0;
+
+                resultHTML += `
+                    <div class="mb-3">
+                        <h6><i class="bi bi-globe"></i> ${result.website}</h6>
+                        ${result.error ?
+                        `<div class="alert alert-warning py-2"><small>Error: ${result.error}</small></div>` :
+                        `<div class="alert alert-success py-2">
+                                <div><small>✓ Successfully scraped ${result.items_scraped} items</small></div>
+                                ${result.saved_at ? `<div><small><i class="bi bi-folder2-open"></i> Saved to: <strong>${result.saved_at}</strong></small></div>` : ''}
+                            </div>`
+                    }
+                    </div>
+                `;
+            });
+
+            resultHTML += `
+                <hr>
+                <div class="result-item">
+                    <strong>Category:</strong>
+                    <span class="badge bg-primary">${data.category}</span>
+                </div>
+                <div class="result-item">
+                    <strong>Total Items Scraped:</strong>
+                    <span class="badge bg-success">${totalItems}</span>
+                </div>
+                <div class="result-item">
+                    <strong>Timestamp:</strong>
+                    <span>${new Date(data.timestamp).toLocaleString()}</span>
+                </div>
+            `;
+
+            resultCard.innerHTML = resultHTML;
+            resultSection.style.display = 'block';
+        }
+
+        // ===========================
+        // RESET FORM
+        // ===========================
+        function resetForm() {
+            document.getElementById('categorySelect').value = '';
+            document.getElementById('websiteSection').style.display = 'none';
+
+            document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach((checkbox, index) => {
+                checkbox.checked = (index === 0);
+            });
+
+            document.getElementById('formatCSV').checked = true;
+            document.getElementById('statusSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+
+            const startButton = document.getElementById('startButton');
+            startButton.disabled = false;
+            startButton.innerHTML = '<i class="bi bi-play-circle"></i> Start Scraping';
+        }
+    </script>
+</body>
+
+</html>
