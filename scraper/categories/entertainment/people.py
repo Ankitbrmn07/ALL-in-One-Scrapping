@@ -186,18 +186,42 @@ class PeopleScraper(BaseScraper):
 
     async def handle_pagination(self) -> bool:
         """Handles pagination for People.com (often has 'Next' or Load More)."""
-        next_button = self.page.locator("a[rel='next'], .load-more-button")
+        # Try clicking "Load More" first as it's common on category pages
+        load_more = self.page.locator(".load-more-button, button:has-text('Load More'), .bw-load-more")
+        if await load_more.count() > 0 and await load_more.first.is_visible():
+            logger.info("People: Clicking 'Load More'...")
+            try:
+                await load_more.first.click(force=True)
+                await asyncio.sleep(5)
+                return True
+            except:
+                pass
+
+        # Fallback to Next page
+        next_button = self.page.locator("a[rel='next'], .pagination__next, a.next-page")
         if await next_button.count() > 0:
             logger.info("People: Moving to next page...")
-            await next_button.first.click()
-            await asyncio.sleep(4)
+            try:
+                await next_button.first.click()
+                await asyncio.sleep(4)
+                return True
+            except:
+                pass
+        
+        # Scrolling might trigger infinite scroll in some views
+        initial_height = await self.page.evaluate("document.body.scrollHeight")
+        await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await asyncio.sleep(3)
+        new_height = await self.page.evaluate("document.body.scrollHeight")
+        if new_height > initial_height:
             return True
+
         return False
 
     def save_to_csv(self, data: List[Dict]):
         """Persists data to CSV using the standardized Exporter."""
         from scraper.core.exporter import Exporter
-        output_file = "data/business/people_data.csv"
+        output_file = "data/entertainment/people_data.csv"
         Exporter.to_csv(data, output_file)
 
     async def scrape(self) -> List[Dict]:
@@ -205,7 +229,7 @@ class PeopleScraper(BaseScraper):
         await self.page.goto(self.BASE_URL, wait_until="domcontentloaded")
         page_count = 1
         
-        while len(self.all_data) < 150 and page_count <= 25: # Restricted for testing/performance
+        while len(self.all_data) < 200 and page_count <= 50:
             links = await self.fetch_listing_links()
             new_links = self.deduplicate_records(links)
             

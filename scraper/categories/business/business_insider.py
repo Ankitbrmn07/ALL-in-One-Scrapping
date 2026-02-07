@@ -43,17 +43,28 @@ class BusinessInsiderScraper(BaseScraper):
 
     async def fetch_listing_links(self) -> List[str]:
         """Identifies all article links on the current page."""
-        """Identifies all article links on the current page."""
         logger.info("BusinessInsider: Fetching listing links...")
         
         # Scroll to bottom to trigger any lazy loading
-        # Increased to 50 scrolls to try and catch 100+ items if infinite scroll
-        for _ in range(50):
+        # Increased to 100 scrolls to try and catch 100+ items if infinite scroll
+        current_height = 0
+        for _ in range(10):
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(2)
+            new_height = await self.page.evaluate("document.body.scrollHeight")
+            if new_height == current_height:
+                # Try clicking "Load More" if stuck
+                load_more = self.page.locator("button:has-text('Load More'), .load-more-button")
+                if await load_more.count() > 0:
+                    try:
+                        await load_more.first.click()
+                        await asyncio.sleep(3)
+                    except:
+                        pass
+            current_height = new_height
             
         # Main story links often in h2/h3 or river-item
-        article_locators = await self.page.locator("h2 a, h3 a, .river-item__title a, a[data-analytics-module='river_item'], .news-stream-item a").all()
+        article_locators = await self.page.locator("h2 a, h3 a, .river-item__title a, a[data-analytics-module='river_item'], .news-stream-item a, .tout-title-link").all()
         urls = []
         for loc in article_locators:
             href = await loc.get_attribute("href")
@@ -61,7 +72,7 @@ class BusinessInsiderScraper(BaseScraper):
             
             full_url = href if href.startswith("http") else f"https://www.businessinsider.com{href}"
             # Filter for actual articles
-            if "businessinsider.com/" in full_url and not any(x in full_url for x in ["/author/", "/category/", "/newsletter/"]):
+            if "businessinsider.com/" in full_url and not any(x in full_url for x in ["/author/", "/category/", "/newsletter/", "/store/"]):
                 if full_url not in urls:
                     urls.append(full_url)
         return urls
