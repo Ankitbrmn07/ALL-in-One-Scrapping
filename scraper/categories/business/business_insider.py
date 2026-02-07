@@ -16,8 +16,8 @@ import hashlib
 
 class BusinessInsiderScraper(BaseScraper):
     CATEGORY = "business"
-    BASE_URL = "https://www.businessinsider.com/"
-    STATE_FILE = "data/business/state_bi.json"
+    BASE_URL = "https://www.businessinsider.com/latest"
+    STATE_FILE = "data/business/state_bi123.json"
 
     def __init__(self, page: Page):
         super().__init__(page)
@@ -43,9 +43,17 @@ class BusinessInsiderScraper(BaseScraper):
 
     async def fetch_listing_links(self) -> List[str]:
         """Identifies all article links on the current page."""
+        """Identifies all article links on the current page."""
         logger.info("BusinessInsider: Fetching listing links...")
+        
+        # Scroll to bottom to trigger any lazy loading
+        # Increased to 10 scrolls to try and catch 100+ items if infinite scroll
+        for _ in range(10):
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1.5)
+            
         # Main story links often in h2/h3 or river-item
-        article_locators = await self.page.locator("h2 a, h3 a, .river-item__title a, a[data-analytics-module='river_item']").all()
+        article_locators = await self.page.locator("h2 a, h3 a, .river-item__title a, a[data-analytics-module='river_item'], .news-stream-item a").all()
         urls = []
         for loc in article_locators:
             href = await loc.get_attribute("href")
@@ -188,18 +196,33 @@ class BusinessInsiderScraper(BaseScraper):
 
     async def handle_pagination(self) -> bool:
         """Navigates to the next page if possible."""
-        next_button = self.page.locator("a[rel='next'], .load-more-button")
-        if await next_button.count() > 0:
-            logger.info("BusinessInsider: Moving to next page...")
-            await next_button.first.click()
-            await asyncio.sleep(4)
-            return True
+        # Try various selectors for Next/Load More
+        selectors = [
+            "a[rel='next']", 
+            ".load-more-button", 
+            "button:has-text('Load More')",
+            "span:has-text('Load More')",
+            ".pagination__next",
+            "nav a:has-text('Next')"
+        ]
+        
+        for sel in selectors:
+            btn = self.page.locator(sel)
+            if await btn.count() > 0:
+                logger.info(f"BusinessInsider: Found pagination button: {sel}")
+                try:
+                    await btn.first.click()
+                    await asyncio.sleep(4)
+                    return True
+                except:
+                    continue
+                    
         return False
 
     def save_to_csv(self, data: List[Dict]):
         """Persists data to CSV using the Exporter."""
         from scraper.core.exporter import Exporter
-        output_file = "data/business/business_insider_data.csv"
+        output_file = "data/business/business_insider_data123.csv"
         Exporter.to_csv(data, output_file)
 
     async def scrape(self) -> List[Dict]:
@@ -207,7 +230,8 @@ class BusinessInsiderScraper(BaseScraper):
         await self.page.goto(self.BASE_URL, wait_until="domcontentloaded")
         page_count = 1
         
-        while page_count <= 3: # Limit for safety
+        # Target 200+ items or max 50 pages to ensure we get >100
+        while len(self.all_data) < 200 and page_count <= 50:
             links = await self.fetch_listing_links()
             new_links = self.deduplicate_records(links)
             
