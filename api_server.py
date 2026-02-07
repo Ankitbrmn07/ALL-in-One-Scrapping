@@ -24,6 +24,7 @@ from scraper.categories.sports.sportskeeda import SportskeedaScraper
 from scraper.categories.travel.lonelyplanet import LonelyPlanetScraper
 from scraper.categories.fashion.fashionunited import FashionUnitedScraper
 from scraper.categories.business.business_insider import BusinessInsiderScraper
+from scraper.categories.entertainment.people import PeopleScraper
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +51,8 @@ SCRAPER_CLASSES = {
     "sportskeeda": SportskeedaScraper,
     "lonelyplanet": LonelyPlanetScraper,
     "fashionunited": FashionUnitedScraper,
-    "business_insider": BusinessInsiderScraper
+    "business_insider": BusinessInsiderScraper,
+    "people": PeopleScraper
 }
 
 # Category to Website Mapping
@@ -90,6 +92,9 @@ CATEGORY_WEBSITES = {
     ],
     "business": [
         {"name": "Business Insider", "url": "https://www.businessinsider.com/", "scraper": "business_insider"}
+    ],
+    "entertainment": [
+        {"name": "People", "url": "https://people.com/", "scraper": "people"}
     ]
 }
 

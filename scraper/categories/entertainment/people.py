@@ -5,19 +5,18 @@ import random
 import re
 import csv
 import os
+import json
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Optional
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
-import json
-import hashlib
-
-class BusinessInsiderScraper(BaseScraper):
-    CATEGORY = "business"
-    BASE_URL = "https://www.businessinsider.com/"
-    STATE_FILE = "data/business/state_bi.json"
+class PeopleScraper(BaseScraper):
+    CATEGORY = "entertainment"
+    BASE_URL = "https://people.com/"
+    STATE_FILE = "data/entertainment/state_people.json"
 
     def __init__(self, page: Page):
         super().__init__(page)
@@ -42,18 +41,18 @@ class BusinessInsiderScraper(BaseScraper):
             json.dump({"scraped_urls": list(self.scraped_urls)}, f)
 
     async def fetch_listing_links(self) -> List[str]:
-        """Identifies all article links on the current page."""
-        logger.info("BusinessInsider: Fetching listing links...")
-        # Main story links often in h2/h3 or river-item
-        article_locators = await self.page.locator("h2 a, h3 a, .river-item__title a, a[data-analytics-module='river_item']").all()
+        """Identifies article links on the People.com homepage/listing page."""
+        logger.info("People: Fetching listing links...")
+        # People.com uses cards for articles
+        article_locators = await self.page.locator("a.card, a.mntl-card-list-items, .card-list__list a, article a").all()
         urls = []
         for loc in article_locators:
             href = await loc.get_attribute("href")
             if not href: continue
             
-            full_url = href if href.startswith("http") else f"https://www.businessinsider.com{href}"
-            # Filter for actual articles
-            if "businessinsider.com/" in full_url and not any(x in full_url for x in ["/author/", "/category/", "/newsletter/"]):
+            full_url = href if href.startswith("http") else f"https://people.com{href}"
+            # Filter for meaningful article links
+            if "people.com/" in full_url and not any(x in full_url for x in ["/search?", "/author/"]):
                 if full_url not in urls:
                     urls.append(full_url)
         return urls
@@ -61,90 +60,90 @@ class BusinessInsiderScraper(BaseScraper):
     def deduplicate_records(self, urls: List[str]) -> List[str]:
         """Filters out already scraped URLs."""
         new_urls = [u for u in urls if u not in self.scraped_urls]
-        logger.info(f"BusinessInsider: {len(new_urls)} new articles found out of {len(urls)} total.")
+        logger.info(f"People: {len(new_urls)} new articles found out of {len(urls)} total.")
         return new_urls
 
     async def scrape_article_details(self, url: str) -> Dict:
-        """Scrapes full details for a single article into the 28-field schema."""
-        logger.info(f"BusinessInsider: Scraping details for {url}")
+        """Scrapes full details for a single People.com article into the 28-field schema."""
+        logger.info(f"People: Scraping details for {url}")
         try:
-            print(f"DEBUG: Scraping {url}")
             await self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            print("DEBUG: Page loaded")
-            await asyncio.sleep(random.uniform(2, 4))
+            await asyncio.sleep(random.uniform(2, 5))
             
             # Extract basic data
-            h1_count = await self.page.locator("h1").count()
-            print(f"DEBUG: h1_count: {h1_count}")
-            title = "N/A"
-            if h1_count > 0:
-                title = await self.page.locator("h1").first.inner_text()
-            print(f"DEBUG: title: {title}")
+            title_node = self.page.locator("h1").first
+            title = await title_node.inner_text() if await title_node.count() > 0 else "N/A"
             
-            # Try broad set of selectors for content
-            content_selectors = [
-                ".article-body-text p",
-                ".premium-content p",
-                ".content-lock-content p",
-                ".article-body p",
-                "article p",
-                ".article-content p",
-                "main p",
-                "div[data-component='article-body'] p"
+            # Content extraction with multiple selectors
+            selectors = [
+                ".paragraph", 
+                "p", 
+                ".article-content p", 
+                ".mntl-sc-block-reveal__content p",
+                ".article-body p"
             ]
             
             content_nodes = []
-            for selector in content_selectors:
-                nodes = await self.page.locator(selector).all()
-                if nodes:
-                    content_nodes = nodes
-                    print(f"DEBUG: Found {len(nodes)} nodes using selector: {selector}")
+            for sel in selectors:
+                found = await self.page.locator(sel).all()
+                if len(found) > 3: # Prefer selectors that give more content
+                    content_nodes = found
                     break
             
             if not content_nodes:
-                # Last resort: all paragraphs in main article
                 content_nodes = await self.page.locator("p").all()
-                print(f"DEBUG: Fallback to all p tags: {len(content_nodes)}")
-            
+                
             content_list = []
             for n in content_nodes:
                 try:
                     text = await n.inner_text()
                     if len(text) > 30:
                         content_list.append(text)
-                except Exception as node_e:
-                    print(f"DEBUG: node error: {node_e}")
+                except:
+                    continue
             content_text = "\n".join(content_list)
             
-            # Meta fields
-            meta_desc_loc = self.page.locator('meta[name="description"]')
+            # Meta fields (SEO & OpenGraph)
+            meta_desc_node = self.page.locator('meta[name="description"]')
             meta_desc = ""
-            if await meta_desc_loc.count() > 0:
-                meta_desc = await meta_desc_loc.get_attribute("content")
+            if await meta_desc_node.count() > 0:
+                meta_desc = await meta_desc_node.get_attribute("content")
             
-            og_image_loc = self.page.locator('meta[property="og:image"]')
+            og_image_node = self.page.locator('meta[property="og:image"]')
             og_image = ""
-            if await og_image_loc.count() > 0:
-                og_image = await og_image_loc.get_attribute("content")
-            
-            canonical_loc = self.page.locator('link[rel="canonical"]')
+            if await og_image_node.count() > 0:
+                og_image = await og_image_node.get_attribute("content")
+                
+            canonical_node = self.page.locator('link[rel="canonical"]')
             canonical = url
-            if await canonical_loc.count() > 0:
-                full_canonical = await canonical_loc.get_attribute("href")
+            if await canonical_node.count() > 0:
+                full_canonical = await canonical_node.get_attribute("href")
                 if full_canonical: canonical = full_canonical
             
+            meta_keywords_node = self.page.locator('meta[name="keywords"]')
+            meta_keywords = ""
+            if await meta_keywords_node.count() > 0:
+                meta_keywords = await meta_keywords_node.get_attribute("content")
+            
             # Images
-            img_nodes = await self.page.locator("article img, .article-body img").all()
+            img_nodes = await self.page.locator("img").all()
             all_images = []
             for img in img_nodes:
                 src = await img.get_attribute("src")
-                if src and "http" in src: all_images.append(src)
+                if src and "http" in src and "avatar" not in src.lower():
+                    all_images.append(src)
             all_images = list(set(all_images))
             
-            author_loc = self.page.locator(".author-name")
-            author = "Business Insider"
-            if await author_loc.count() > 0:
-                author_text = await author_loc.first.inner_text()
+            # Breadcrumb for category
+            category = self.CATEGORY
+            breadcrumb_node = self.page.locator(".mntl-breadcrumb").first
+            if await breadcrumb_node.count() > 0:
+                category = await breadcrumb_node.inner_text()
+            
+            author_node = self.page.locator(".mntl-attribution__item-name")
+            author = "People Staff"
+            if await author_node.count() > 0:
+                author_text = await author_node.first.inner_text()
                 if author_text: author = author_text
             
             now = datetime.now().isoformat()
@@ -155,9 +154,9 @@ class BusinessInsiderScraper(BaseScraper):
                 "run_id": datetime.now().strftime("%Y%m%d%H%M%S"),
                 "row_id": len(self.all_data) + 1,
                 "title": title.strip(),
-                "description": meta_desc.strip() if meta_desc else "",
+                "description": meta_desc.strip(),
                 "source": author.strip(),
-                "category": self.CATEGORY,
+                "category": category.strip(),
                 "link": url,
                 "image_url": og_image or (all_images[0] if all_images else ""),
                 "status": "published",
@@ -167,14 +166,14 @@ class BusinessInsiderScraper(BaseScraper):
                 "likes": 0,
                 "content": content_text.strip(),
                 "slug": title.lower().replace(" ", "-").replace("'", "").replace("\"", "")[:50],
-                "excerpt": content_text[:200].strip() + "...",
+                "excerpt": content_text[:250].strip() + "...",
                 "meta_title": title.strip(),
-                "meta_description": meta_desc.strip() if meta_desc else "",
-                "meta_keywords": "",
+                "meta_description": meta_desc.strip(),
+                "meta_keywords": meta_keywords,
                 "canonical_url": canonical,
                 "og_title": title.strip(),
-                "og_description": meta_desc.strip() if meta_desc else "",
-                "og_image": og_image if og_image else "",
+                "og_description": meta_desc.strip(),
+                "og_image": og_image,
                 "focus_keyword": "",
                 "is_indexable": True,
                 "is_followable": True,
@@ -182,32 +181,31 @@ class BusinessInsiderScraper(BaseScraper):
             }
             return item
         except Exception as e:
-            print(f"DEBUG: Error in scrape_article_details: {e}")
-            logger.error(f"Failed to scrape {url}: {e}")
+            logger.error(f"People: Failed to scrape {url}: {e}")
             return None
 
     async def handle_pagination(self) -> bool:
-        """Navigates to the next page if possible."""
+        """Handles pagination for People.com (often has 'Next' or Load More)."""
         next_button = self.page.locator("a[rel='next'], .load-more-button")
         if await next_button.count() > 0:
-            logger.info("BusinessInsider: Moving to next page...")
+            logger.info("People: Moving to next page...")
             await next_button.first.click()
             await asyncio.sleep(4)
             return True
         return False
 
     def save_to_csv(self, data: List[Dict]):
-        """Persists data to CSV using the Exporter."""
+        """Persists data to CSV using the standardized Exporter."""
         from scraper.core.exporter import Exporter
-        output_file = "data/business/business_insider_data.csv"
+        output_file = "data/entertainment/people_data.csv"
         Exporter.to_csv(data, output_file)
 
     async def scrape(self) -> List[Dict]:
-        """Orchestrates the modular scraping process."""
+        """Main entry point for the modular scraping flow."""
         await self.page.goto(self.BASE_URL, wait_until="domcontentloaded")
         page_count = 1
         
-        while page_count <= 3: # Limit for safety
+        while page_count <= 2: # Restricted for testing/performance
             links = await self.fetch_listing_links()
             new_links = self.deduplicate_records(links)
             
@@ -223,5 +221,5 @@ class BusinessInsiderScraper(BaseScraper):
             page_count += 1
             
         self.save_to_csv(self.all_data)
-        logger.info(f"BusinessInsider: Total scraped: {len(self.all_data)}")
+        logger.info(f"People: Total articles scraped: {len(self.all_data)}")
         return self.all_data

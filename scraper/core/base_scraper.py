@@ -31,13 +31,12 @@ class BaseScraper(ABC):
         except Exception as e:
             logger.error(f"Navigation failed: {e}")
 
-    @abstractmethod
     async def extract_items(self) -> List[Dict]:
         """
         Main logic to identify and extract items from the listing page.
         Should return a list of dictionaries.
         """
-        pass
+        return []
 
     async def scrape(self) -> List[Dict]:
         """
