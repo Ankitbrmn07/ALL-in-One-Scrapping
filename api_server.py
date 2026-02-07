@@ -23,6 +23,7 @@ from scraper.categories.sports.espncricinfo import ESPNCricinfoScraper
 from scraper.categories.sports.sportskeeda import SportskeedaScraper
 from scraper.categories.travel.lonelyplanet import LonelyPlanetScraper
 from scraper.categories.fashion.fashionunited import FashionUnitedScraper
+from scraper.categories.business.business_insider import BusinessInsiderScraper
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -48,7 +49,8 @@ SCRAPER_CLASSES = {
     "espncricinfo": ESPNCricinfoScraper,
     "sportskeeda": SportskeedaScraper,
     "lonelyplanet": LonelyPlanetScraper,
-    "fashionunited": FashionUnitedScraper
+    "fashionunited": FashionUnitedScraper,
+    "business_insider": BusinessInsiderScraper
 }
 
 # Category to Website Mapping
@@ -85,6 +87,9 @@ CATEGORY_WEBSITES = {
     ],
     "fashion": [
         {"name": "Fashion United", "url": "https://fashionunited.in/news/fashion", "scraper": "fashionunited"}
+    ],
+    "business": [
+        {"name": "Business Insider", "url": "https://www.businessinsider.com/", "scraper": "business_insider"}
     ]
 }
 
