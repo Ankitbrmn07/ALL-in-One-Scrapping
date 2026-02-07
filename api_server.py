@@ -84,7 +84,7 @@ CATEGORY_WEBSITES = {
         {"name": "Lonely Planet", "url": "https://www.lonelyplanet.com/", "scraper": "lonelyplanet"}
     ],
     "fashion": [
-        {"name": "Fashion United", "url": "http://fashionunited.in/", "scraper": "fashionunited"}
+        {"name": "Fashion United", "url": "https://fashionunited.in/news/fashion", "scraper": "fashionunited"}
     ]
 }
 
