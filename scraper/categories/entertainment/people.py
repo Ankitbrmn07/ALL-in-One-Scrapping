@@ -197,7 +197,7 @@ class PeopleScraper(BaseScraper):
     def save_to_csv(self, data: List[Dict]):
         """Persists data to CSV using the standardized Exporter."""
         from scraper.core.exporter import Exporter
-        output_file = "data/entertainment/people_data.csv"
+        output_file = "data/business/people_data.csv"
         Exporter.to_csv(data, output_file)
 
     async def scrape(self) -> List[Dict]:
@@ -205,7 +205,7 @@ class PeopleScraper(BaseScraper):
         await self.page.goto(self.BASE_URL, wait_until="domcontentloaded")
         page_count = 1
         
-        while page_count <= 2: # Restricted for testing/performance
+        while len(self.all_data) < 150 and page_count <= 25: # Restricted for testing/performance
             links = await self.fetch_listing_links()
             new_links = self.deduplicate_records(links)
             

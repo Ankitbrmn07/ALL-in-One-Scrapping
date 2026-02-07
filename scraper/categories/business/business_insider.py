@@ -47,8 +47,8 @@ class BusinessInsiderScraper(BaseScraper):
         logger.info("BusinessInsider: Fetching listing links...")
         
         # Scroll to bottom to trigger any lazy loading
-        # Increased to 10 scrolls to try and catch 100+ items if infinite scroll
-        for _ in range(10):
+        # Increased to 50 scrolls to try and catch 100+ items if infinite scroll
+        for _ in range(50):
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await asyncio.sleep(1.5)
             
@@ -222,7 +222,7 @@ class BusinessInsiderScraper(BaseScraper):
     def save_to_csv(self, data: List[Dict]):
         """Persists data to CSV using the Exporter."""
         from scraper.core.exporter import Exporter
-        output_file = "data/business/business_insider_data123.csv"
+        output_file = "data/business/business_insider_data.csv"
         Exporter.to_csv(data, output_file)
 
     async def scrape(self) -> List[Dict]:
