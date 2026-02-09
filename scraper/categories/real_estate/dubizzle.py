@@ -60,6 +60,7 @@ class DubizzleScraper(BaseScraper):
     async def _collect_listing_urls(self, max_pages: int) -> List[str]:
         """
         Iterates through pages and collects all listing URLs.
+        Includes logic to wait for manual CAPTCHA solving.
         """
         collected_urls = set()
         current_page = 1
@@ -67,15 +68,36 @@ class DubizzleScraper(BaseScraper):
         while current_page <= max_pages:
             logger.info(f"[{self.CATEGORY}] Scanning page {current_page}...")
             
-            # Wait for listings to load
-            try:
-                await self.page.wait_for_selector("[data-testid='listing-card'], article", timeout=15000)
-            except:
-                logger.warning(f"Timeout waiting for listings on page {current_page}")
+            # Wait for listings OR Block
+            retries = 0
+            max_retries = 18 # 18 * 10s = 3 minutes wait for user
+            found_listings = False
+            
+            while retries < max_retries:
+                # Check for listings
+                count = await self.page.locator("[data-testid='listing-card'], article").count()
+                if count > 0:
+                    found_listings = True
+                    break
+                
+                # Check for Incapsula/Security
+                title = await self.page.title()
+                content = await self.page.content()
+                if "Incapsula" in content or "security" in title.lower() or "challenge" in title.lower():
+                     logger.warning(f"[{self.CATEGORY}] BLOCK DETECTED! Please solve the CAPTCHA in the opened browser window.")
+                     await asyncio.sleep(10)
+                else:
+                     if retries % 2 == 0:
+                        logger.warning(f"[{self.CATEGORY}] No listings found. Waiting for you to solve CAPTCHA/login... ({retries+1}/{max_retries})")
+                     await asyncio.sleep(10)
+                
+                retries += 1
+            
+            if not found_listings:
+                logger.error(f"[{self.CATEGORY}] Failed to load listings on page {current_page} after waiting.")
                 break
 
             # Extract URLs from current page
-            # Selectors based on inspection and common patterns
             links = await self.page.evaluate("""
                 () => {
                     const anchors = Array.from(document.querySelectorAll("[data-testid='listing-card'] a, article a"));

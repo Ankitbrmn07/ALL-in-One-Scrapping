@@ -33,7 +33,7 @@ class BrowserManager:
         )
         self.context = await self.browser.new_context(
             viewport={"width": 1280, "height": 800},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         )
         # Add init scripts to avoid detection
         await self.context.add_init_script("""

@@ -194,7 +194,7 @@ async def run_scraping(category, websites, data_types, output_format):
     """
     all_results = []
     
-    async with BrowserManager(headless=True) as bm:
+    async with BrowserManager(headless=False) as bm:
         page = await bm.get_page()
         
         for website_key in websites:
