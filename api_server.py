@@ -25,6 +25,7 @@ from scraper.categories.travel.lonelyplanet import LonelyPlanetScraper
 from scraper.categories.fashion.fashionunited import FashionUnitedScraper
 from scraper.categories.business.business_insider import BusinessInsiderScraper
 from scraper.categories.entertainment.people import PeopleScraper
+from scraper.categories.real_estate import DubizzleScraper, BayutScraper, PropertyFinderScraper, EmaarScraper
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -52,7 +53,11 @@ SCRAPER_CLASSES = {
     "lonelyplanet": LonelyPlanetScraper,
     "fashionunited": FashionUnitedScraper,
     "business_insider": BusinessInsiderScraper,
-    "people": PeopleScraper
+    "people": PeopleScraper,
+    "dubizzle": DubizzleScraper,
+    "bayut": BayutScraper,
+    "property_finder": PropertyFinderScraper,
+    "emaar": EmaarScraper
 }
 
 # Category to Website Mapping
@@ -95,6 +100,12 @@ CATEGORY_WEBSITES = {
     ],
     "entertainment": [
         {"name": "People", "url": "https://people.com/", "scraper": "people"}
+    ],
+    "real_estate": [
+        {"name": "Dubizzle UAE", "url": "https://dubai.dubizzle.com/en/property-for-sale/residential/", "scraper": "dubizzle"},
+        {"name": "Bayut", "url": "https://www.bayut.com/for-sale/property/uae/", "scraper": "bayut"},
+        {"name": "Property Finder UAE", "url": "https://www.propertyfinder.ae/en/search?c=2&fu=0&rp=y&ob=mr", "scraper": "property_finder"},
+        {"name": "Emaar Properties", "url": "https://properties.emaar.com/en/our-communities/", "scraper": "emaar"}
     ]
 }
 
